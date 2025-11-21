@@ -4,19 +4,20 @@ steps:
     args:
       - -c
       - |
-        echo "Connecting to VM via SSH..."
-        chmod 600 /root/.ssh/gopi.pem
+        echo "Fetching SSH key from Secret Manager..."
+        gcloud secrets versions access latest --secret=YOUR_SECRET_NAME > gopi.pem
+        chmod 600 gopi.pem
 
-        ssh -o StrictHostKeyChecking=no -i /root/.ssh/gopi.pem gopi@34.47.192.3 "
-          echo 'Taking backup of existing file...'
+        echo "Connecting to VM via SSH..."
+        ssh -o StrictHostKeyChecking=no -i gopi.pem gopi@34.47.192.3 "
+          echo 'Backing up existing file...'
           sudo cp /var/www/html/index.html /var/www/html/index-$(date +%s).bak
 
-          echo 'Deploying new file...'
+          echo 'Deploying new index file...'
           sudo cp /workspace/index.html /var/www/html/index.html
 
-          echo 'Deployment completed successfully!'
+          echo 'Deployment Finished!'
         "
 
-# Disable bucket logs requirement
 options:
   logging: CLOUD_LOGGING_ONLY
