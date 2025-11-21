@@ -1,23 +1,25 @@
 steps:
-  - name: "gcr.io/cloud-builders/gcloud"
+  - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: bash
     args:
       - -c
       - |
         echo "Fetching SSH key from Secret Manager..."
-        gcloud secrets versions access latest --secret=gopi-test > gopi.pem
-        chmod 600 gopi.pem
+        gcloud secrets versions access latest --secret="gopi-test" > /root/.ssh/gopi.pem
+        chmod 600 /root/.ssh/gopi.pem
 
         echo "Connecting to VM via SSH..."
-        ssh -o StrictHostKeyChecking=no -i gopi.pem gopi@34.47.192.3 "
-          echo 'Backing up existing file...'
-          sudo cp /var/www/html/index.html /var/www/html/index-$(date +%s).bak
+        scp -o StrictHostKeyChecking=no -i /root/.ssh/gopi.pem /workspace/index.html gopi@34.47.192.3:/tmp/index.html
 
-          echo 'Deploying new index file...'
-          sudo cp /workspace/index.html /var/www/html/index.html
-
-          echo 'Deployment Finished!'
+        ssh -o StrictHostKeyChecking=no -i /root/.ssh/gopi.pem gopi@34.47.192.3 "
+          echo 'Backing up existing file...' &&
+          sudo cp /var/www/html/index.html /var/www/html/index-backup-$(date +%s).html &&
+          echo 'Deploying new version...' &&
+          sudo mv /tmp/index.html /var/www/html/index.html &&
+          sudo systemctl restart apache2 || true
         "
 
 options:
   logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: "gopi-test@exemplary-oath-478810-g0.iam.gserviceaccount.com"
