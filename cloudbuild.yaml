@@ -5,7 +5,7 @@ steps:
       - -c
       - |
         echo "Fetching SSH key from Secret Manager..."
-        gcloud secrets versions access latest --secret=YOUR_SECRET_NAME > gopi.pem
+        gcloud secrets versions access latest --secret=gopi-test > gopi.pem
         chmod 600 gopi.pem
 
         echo "Connecting to VM via SSH..."
