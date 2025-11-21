@@ -1,26 +1,22 @@
 steps:
-  - name: 'gcr.io/cloud-builders/git'
+  - name: "gcr.io/cloud-builders/gcloud"
     entrypoint: bash
     args:
-      - '-c'
+      - -c
       - |
-        echo "Cloning repo..."
-        git clone https://github.com/gopinath940/gopi-test-cicd.git repo
+        echo "Connecting to VM via SSH..."
+        chmod 600 /root/.ssh/gopi.pem
 
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        echo "Fetching private key..."
-        gcloud secrets versions access latest --secret="gopi-ssh-key" > /root/.ssh/id_rsa
-        chmod 600 /root/.ssh/id_rsa
+        ssh -o StrictHostKeyChecking=no -i /root/.ssh/gopi.pem gopi@34.47.192.3 "
+          echo 'Taking backup of existing file...'
+          sudo cp /var/www/html/index.html /var/www/html/index-$(date +%s).bak
 
-        echo "Copying file to VM..."
-        scp -o StrictHostKeyChecking=no \
-          repo/index.html \
-          gopi@34.47.192.3:/var/www/html/index.html
+          echo 'Deploying new file...'
+          sudo cp /workspace/index.html /var/www/html/index.html
 
-        echo "Deployment complete!"
+          echo 'Deployment completed successfully!'
+        "
 
-timeout: "1200s"
+# Disable bucket logs requirement
+options:
+  logging: CLOUD_LOGGING_ONLY
