@@ -1,29 +1,26 @@
 steps:
-- name: "gcr.io/cloud-builders/gcloud"
-  entrypoint: bash
-  args:
-    - "-c"
-    - |
-      echo "🔑 Fetching SSH Key from Secret Manager..."
-      gcloud secrets versions access latest --secret=vm-ssh-key > /root/.ssh/id_rsa
+  - name: 'gcr.io/cloud-builders/git'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "Cloning repo..."
+        git clone https://github.com/gopinath940/gopi-test-cicd.git repo
 
-      echo "📁 Configuring SSH..."
-      mkdir -p /root/.ssh
-      chmod 600 /root/.ssh/id_rsa
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        echo "Fetching private key..."
+        gcloud secrets versions access latest --secret="gopi-ssh-key" > /root/.ssh/id_rsa
+        chmod 600 /root/.ssh/id_rsa
 
-      cat <<EOF > /root/.ssh/config
-      Host prodvm
-        HostName <VM_PUBLIC_IP>
-        User gopi
-        IdentityFile /root/.ssh/id_rsa
-        StrictHostKeyChecking no
-      EOF
+        echo "Copying file to VM..."
+        scp -o StrictHostKeyChecking=no \
+          repo/index.html \
+          gopi@34.47.192.3:/var/www/html/index.html
 
-      echo "📤 Copying updated index.html to VM..."
-      scp -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no ./index.html gopi@<VM_PUBLIC_IP>:/var/www/html/index.html
+        echo "Deployment complete!"
 
-      echo "🔄 Restarting Apache..."
-      ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no gopi@<VM_PUBLIC_IP> "sudo systemctl restart apache2"
-
-      echo "🎉 Deployment Completed Successfully!"
-
+timeout: "1200s"
